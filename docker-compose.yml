@@ -1,0 +1,46 @@
+version: "3.1"
+services:
+  app:
+    image: doodloo/joomla-secretized:latest
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
+    volumes:
+      - app-html:/var/www/html
+    secrets:
+      - source: ttwebsite_db_root_password
+        target: app_db_password
+    environment:
+      - ENV_SECRETS_DEBUG=True
+      - JOOMLA_DB_HOST=db:3306
+      - JOOMLA_DB_NAME=ttwebsite
+      - JOOMLA_DB_USER=root
+      - JOOMLA_DB_PASSWORD=[[DOCKER-SECRET:app_db_password]]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.30"
+          memory: 256M
+      placement:
+        constraints:
+          - node.role == manager
+
+  db:
+    image: mysql:5.7
+    volumes:
+      - db-data:/var/lib/mysql
+    secrets:
+      - source: ttwebsite_db_root_password
+        target: db_root_password
+    environment:
+      - MYSQL_DATABASE=ttwebsite
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db_root_password
+
+secrets:
+  ttwebsite_db_root_password:
+    external: true
+
+volumes:
+  app-html:
+  db-data:
